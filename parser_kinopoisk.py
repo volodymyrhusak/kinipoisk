@@ -102,10 +102,14 @@ def select_film(studio,year):
     for film in dbCursor.fetchall():
         print film[0]#+'/n'+film[1]+'/n'+film[2]
 
-def make_url():
+def make_url(filmName=None):
     start_url='http://www.kinopoisk.ru/index.php?first=no&what=&kp_query='
-    if enter_film_name():
-        return start_url+enter_film_name()
+    if filmName:
+        return start_url+filmName
+    else:
+        enterFilmName=enter_film_name()
+        if enter_film_name:
+            return start_url+enterFilmName
 
 def get_id_film(html):
      soup = BeautifulSoup(html)
@@ -114,7 +118,6 @@ def get_id_film(html):
      id_film=p.a['href']
      print id_film
      return id_film
-
 
      
 

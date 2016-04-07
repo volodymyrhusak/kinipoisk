@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, render_template, request ,redirect
+from get_page import make_url
 app = Flask(__name__)
 
 @app.route('/')
@@ -9,6 +10,8 @@ def home():
 @app.route('/film', methods=["POST"])
 def search_in_page():
 	filmName=request.form['filmName']
+	make_url(filmName)
+	
 	return redirect('/film_good')
 
 # @app.route('/film/<studio><year>')
