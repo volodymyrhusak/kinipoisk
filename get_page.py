@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
-from select_insert_db import insert_data
+from select_insert_db import insert_data, select_data, select_studio_data
 
 def make_url(filmName):
+	print "___________________________________________make_url___________________________________________"
 	startUrl='http://www.kinopoisk.ru/index.php?first=no&what=&kp_query='
 	filmName=filmName.replace(' ','+')
 	serchUrl=startUrl+filmName
@@ -30,8 +31,8 @@ def make_url(filmName):
 	responseStudio.text.encode('utf-8')
 	htmlListStudio=responseStudio.content
 
-	get_data(htmlFilm,htmlListStudio)
-
+	idkinopoiskfilm=get_data(htmlFilm,htmlListStudio)
+	return idkinopoiskfilm
 
 def get_id_film(html):
      soup = BeautifulSoup(html)
@@ -43,21 +44,23 @@ def get_id_film(html):
 
 
 def get_studio(htmlListStudio):
-    urlStudioFilmDict={}
-    soupStudio=BeautifulSoup(htmlListStudio)
-    divListStudio=soupStudio.find('div', style="margin-left: 64px; text-align: left")
-    studioTable=divListStudio.find_all('table')[0]
-    studio=studioTable.find_all('td')
-    for td in studio:
-        if td.a:           
-            urlStudioFilmDict[td.a.text.encode('utf-8')]='http://www.kinopoisk.ru/'+td.a['href']
+	print "___________________________________________get_studio___________________________________________"
+	urlStudioFilmDict={}
+	soupStudio=BeautifulSoup(htmlListStudio)
+	divListStudio=soupStudio.find('div', style="margin-left: 64px; text-align: left")
+	studioTable=divListStudio.find_all('table')[0]
+	studio=studioTable.find_all('td')
+	for td in studio:
+		if td.a:           
+			urlStudioFilmDict[td.a.text.encode('utf-8')]='http://www.kinopoisk.ru/'+td.a['href']
 
-    print urlStudioFilmDict
-    return ','.join(urlStudioFilmDict.keys())
+    #print urlStudioFilmDict
+	return ','.join(urlStudioFilmDict.keys())
 
 
 
 def parse_film(html):
+    print "___________________________________________parse_film___________________________________________"
     year=u'год'
     slogan=u'слоган'
 
@@ -102,10 +105,23 @@ def parse_film(html):
     return filmNameRus,film_year,film_slogan,film_descr,img_requests,review
 
 
+def select_film(idkinopoiskfilm):
+	return select_data(idkinopoiskfilm)
+
+def select_studio_film(studio):
+	return select_studio_data(studio)
+	 
+	
+
+
+
 def  get_data(htmlFilm,htmlListStudio):
+	print "___________________________________________get_data___________________________________________"
 	dataFilm=parse_film(htmlFilm)
 	studio=get_studio(htmlListStudio)
-	insert_data(dataFilm,studio)
+	idkinopoiskfilm=insert_data(dataFilm,studio)
+	return idkinopoiskfilm
+
 
 
 

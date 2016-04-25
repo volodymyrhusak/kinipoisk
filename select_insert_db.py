@@ -3,6 +3,7 @@ import MySQLdb
 import base64
 
 def db_connect():
+    print "___________________________________________db_connect___________________________________________"
     try:
         db=MySQLdb.connect(host='localhost', user='root',passwd='123',db='lodkotest')
         dbCursor=db.cursor()
@@ -51,6 +52,7 @@ def db_connect():
 
 def insert_data(data,studio):
 	db=db_connect()
+	print "___________________________________________insert_data___________________________________________"
 	filmNameRus=data[0]
 	film_year=data[1]
 	film_slogan=data[2]
@@ -58,12 +60,58 @@ def insert_data(data,studio):
 	img_requests=base64.b64encode(data[4])
 	film_res=data[5]
 	dbCursor=db.cursor()
-	    
-	dbCursor.execute('INSERT INTO kinopoiskfilm (name,slogan,descr,year,studio)VALUE("%s","%s","%s","%s","%s")'%(filmNameRus,film_slogan,film_descr,str(film_year),studio))
-	dbCursor.execute('COMMIT')
 
-	dbCursor.execute('SELECT max(idkinopoiskfilm) FROM kinopoiskfilm WHERE name="%s"'%(filmNameRus))
-	idkinopoiskfilm=int(dbCursor.fetchone()[0])
-	    
-	dbCursor.execute('INSERT INTO filmimage (imagefilm,idkinopoiskfilm,reviewdescr)VALUE("%s",%s,"%s")'%(img_requests,str(idkinopoiskfilm),film_res))
-	dbCursor.execute('COMMIT')
+	dbCursor.execute('SELECT idkinopoiskfilm FROM kinopoiskfilm where name = "%s" '%filmNameRus)
+	idkinopoiskfilm=dbCursor.fetchone()[0]
+	if not idkinopoiskfilm:
+		dbCursor.execute('INSERT INTO kinopoiskfilm (name,slogan,descr,year,studio)VALUE("%s","%s","%s","%s","%s")'%(filmNameRus,film_slogan,film_descr,str(film_year),studio))
+		dbCursor.execute('COMMIT')
+
+		dbCursor.execute('SELECT max(idkinopoiskfilm) FROM kinopoiskfilm WHERE name="%s"'%(filmNameRus))
+		idkinopoiskfilm=dbCursor.fetchone()[0]
+		    
+		dbCursor.execute('INSERT INTO filmimage (imagefilm,idkinopoiskfilm,reviewdescr)VALUE("%s",%s,"%s")'%(img_requests,idkinopoiskfilm,film_res))
+		dbCursor.execute('COMMIT')
+	
+
+
+	
+	
+	return idkinopoiskfilm
+
+def select_data(idkinopoiskfilm):
+	db=db_connect()
+	dbCursor=db.cursor()
+	print idkinopoiskfilm
+	dbCursor.execute('''select k.name, k.slogan, k.descr,k.year,k.studio, f.reviewdescr, f.imagefilm  
+                        from kinopoiskfilm k 
+                        join filmimage f on f.idkinopoiskfilm=k.idkinopoiskfilm 
+                        where k.idkinopoiskfilm=1''')
+	dataFilm=dbCursor.fetchone()
+	response ={
+	'filmName':dataFilm[0].decode('utf-8'),
+	'filmSlogan':dataFilm[1].decode('utf-8'),
+	'filmDescr':dataFilm[2].decode('utf-8'),
+	'filmYear':dataFilm[3].decode('utf-8'),
+	'filmStudio':dataFilm[4].decode('utf-8').split(','),  #.split(',')
+	'filmReviedescr':dataFilm[5].decode('utf-8'),
+	'filmImage':base64.b64decode(dataFilm[6])
+	}
+	#print response 
+	#print response['filmStudio']
+	return response
+
+def select_studio_data(studio):
+    db=db_connect()
+    dbCursor=db.cursor()
+    dbCursor.execute('''select k.name, k.descr ,k.idkinopoiskfilm 
+                        from kinopoiskfilm k 
+                        where k.studio like "%'''+studio+'''%" ''')
+    data=dbCursor.fetchall()
+    response=[]
+    for film in data:
+    	# film[0].decode('utf-8')
+    	# film[1].decode('utf-8')
+    	response.append((film[0].decode('utf-8'),film[1].decode('utf-8'),film[2]))
+    #print  response 
+    return response

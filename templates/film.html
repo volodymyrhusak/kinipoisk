@@ -1,1 +1,14 @@
-<p>GOOD!!</p>
+
+<h2>{{filmData.filmName}}</h2>
+<h4>{{filmData.filmSlogan}}</h4>
+{%for studio in filmData.filmStudio%}
+
+
+<p>
+	<a href='/studio_film/{{studio}}'>{{studio}}</a>
+</p>
+
+{%endfor%}
+<p>{{filmData.filmDescr}}</p>
+
+
