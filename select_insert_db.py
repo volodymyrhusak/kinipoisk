@@ -61,9 +61,11 @@ def insert_data(data,studio):
 	film_res=data[5]
 	dbCursor=db.cursor()
 
-	dbCursor.execute('SELECT idkinopoiskfilm FROM kinopoiskfilm where name = "%s" '%filmNameRus)
-	idkinopoiskfilm=dbCursor.fetchone()[0]
-	if not idkinopoiskfilm:
+	dbCursor.execute('SELECT idkinopoiskfilm FROM kinopoiskfilm where name = "%s" and studio = "%s"'%(filmNameRus,studio))
+
+	try:
+		idkinopoiskfilm=dbCursor.fetchone()[0]
+	except TypeError:
 		dbCursor.execute('INSERT INTO kinopoiskfilm (name,slogan,descr,year,studio)VALUE("%s","%s","%s","%s","%s")'%(filmNameRus,film_slogan,film_descr,str(film_year),studio))
 		dbCursor.execute('COMMIT')
 
@@ -74,19 +76,19 @@ def insert_data(data,studio):
 		dbCursor.execute('COMMIT')
 	
 
-
-	
 	
 	return idkinopoiskfilm
 
 def select_data(idkinopoiskfilm):
 	db=db_connect()
 	dbCursor=db.cursor()
-	print idkinopoiskfilm
-	dbCursor.execute('''select k.name, k.slogan, k.descr,k.year,k.studio, f.reviewdescr, f.imagefilm  
-                        from kinopoiskfilm k 
-                        join filmimage f on f.idkinopoiskfilm=k.idkinopoiskfilm 
-                        where k.idkinopoiskfilm=1''')
+	print idkinopoiskfilm[1:-1]
+	select='''select k.name, k.slogan, k.descr,k.year,k.studio, f.reviewdescr, f.imagefilm  
+						from lodkotest.kinopoiskfilm k 
+                        join lodkotest.filmimage f on f.idkinopoiskfilm=k.idkinopoiskfilm 
+                        where k.idkinopoiskfilm=%s''' % idkinopoiskfilm[1:-1]
+	print select
+	dbCursor.execute(select)
 	dataFilm=dbCursor.fetchone()
 	response ={
 	'filmName':dataFilm[0].decode('utf-8'),
