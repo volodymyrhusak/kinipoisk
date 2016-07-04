@@ -11,6 +11,10 @@ def home():
 @app.route('/post_film', methods=["POST"])
 def search_in_page():
 	filmName=request.form['filmName']
+	if not filmName:
+		return render_template('home.html')
+
+	
 	idkinopoiskfilm=make_url(filmName)
 	
 	

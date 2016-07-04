@@ -72,7 +72,7 @@ def insert_data(data,studio):
 		dbCursor.execute('SELECT max(idkinopoiskfilm) FROM kinopoiskfilm WHERE name="%s"'%(filmNameRus))
 		idkinopoiskfilm=dbCursor.fetchone()[0]
 		    
-		dbCursor.execute('INSERT INTO filmimage (imagefilm,idkinopoiskfilm,reviewdescr)VALUE("%s",%s,"%s")'%(img_requests,idkinopoiskfilm,film_res))
+		dbCursor.execute('INSERT INTO filmimage (imagefilm,idkinopoiskfilm,reviewdescr)VALUE("%s",%s,"%s")'%(repr(img_requests),idkinopoiskfilm,film_res))
 		dbCursor.execute('COMMIT')
 	
 
