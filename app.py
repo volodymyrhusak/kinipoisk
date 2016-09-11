@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, render_template, request, redirect, session, url_for
 from get_page import make_url, select_film, select_studio_film
-from select_insert_db import select_user
+from select_insert_db import select_user, select_data
 from functools import wraps
 app = Flask(__name__)
 
@@ -11,17 +11,21 @@ app.secret_key='secret'
 def login_required(f):
 	@wraps(f)
 	def wrap(*args, **kwargs):
-		if 'logged_in' in session:
+		if 'username' in session:
 			return f(*args, **kwargs)
 		else:
-			return redirect('/login')
+			return redirect(url_for('login'))
 	return wrap
 
 
 @app.route('/')
 @login_required
 def home():
-    return render_template('home.html')
+	userName=session['username']
+	films=select_data(userName=userName)
+	userData={'user':userName,
+	'films':films}
+    return render_template('home.html' , userData=userData)
 
 @app.route('/login', methods=["GET","POST"])
 def login():
@@ -31,10 +35,10 @@ def login():
 		userName = request.form['userName']
 		password = request.form['password']
 		if select_user(userName,password):
-			session['logged_in'] = True
-			return redirect('/')
+			session['username'] = userName
+			return redirect(url_for('home'))
 		else:
-			return redirect('/login')
+			return redirect(url_for('login'))
 
 
 @app.route('/post_film', methods=["POST"])
@@ -67,8 +71,8 @@ def studio_film(studio):
 @app.route('/logout')
 @login_required
 def logout():
-    session.pop('logged_in', None)
-    return redirect('/login')
+    session.pop('username', None)
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(debug=True)

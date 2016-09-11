@@ -5,44 +5,34 @@ from select_insert_db import insert_data, select_data, select_studio_data
 
 
 def make_url(filmName):
-    print "___________________________________________make_url___________________________________________"
-    startUrl = 'http://www.kinopoisk.ru/index.php?first=no&what=&kp_query='
     filmName = filmName.replace(' ', '+')
-    serchUrl = startUrl + filmName
-    response = requests.get(serchUrl)
+    params={'first':'yes',
+            'kp_query':filmName}
+    url = 'https://www.kinopoisk.ru/index.php'
+    response = requests.get(url, params=params)
+    print response.url
+    print response.encoding
     response.encoding = 'UTF-8'
     response.text.encode('utf-8')
-    data = response.content
-    print response.url
-    if serchUrl == response.url:
-        print "serchUrl==response.url:"
-        idFilm = get_id_film(data)
-        urlFilm = 'http://www.kinopoisk.ru/' + idFilm
-        response = requests.get(urlFilm)
-        urlFilm = response.url
-        response.encoding = 'UTF-8'
-        response.text.encode('utf-8')
-        htmlFilm = response.content
-    else:
-        htmlFilm = data
+    htmlFilm = response.content
+    urlFilm = response.url
     urlListStudio = urlFilm + 'studio/'
     print urlListStudio
     responseStudio = requests.get(urlListStudio)
     responseStudio.encoding = 'UTF-8'
     responseStudio.text.encode('utf-8')
     htmlListStudio = responseStudio.content
-
     idkinopoiskfilm = get_data(htmlFilm, htmlListStudio)
     return idkinopoiskfilm
 
 
-def get_id_film(html):
-    soup = BeautifulSoup(html)
-    div = soup.find('div', class_='element most_wanted')
-    p = div.find('p', class_='name')
-    id_film = p.a['href']
-    print id_film
-    return id_film
+# def get_id_film(html):
+#     soup = BeautifulSoup(html)
+#     div = soup.find('div', class_='element most_wanted')
+#     p = div.find('p', class_='name')
+#     id_film = p.a['href']
+#     print id_film
+#     return id_film
 
 
 def get_studio(htmlListStudio):
@@ -66,11 +56,8 @@ def parse_film(html):
     print "___________________________________________parse_film___________________________________________"
     year = u'год'
     slogan = u'слоган'
-
-
 # Ceate soup
     soupFilm = BeautifulSoup(html)
-
 
 # get film name
     divName = soupFilm.find('div', id='headerFilm')

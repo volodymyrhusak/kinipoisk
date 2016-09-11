@@ -1,68 +1,19 @@
 # -*- coding: utf-8 -*-
 import MySQLdb
 import base64
-
+from config import DB
 
 def db_connect():
-    print "___________________________________________db_connect___________________________________________"
-    try:
-        db = MySQLdb.connect(
-            host='localhost',
-            user='root',
-            passwd='1',
-            db='lodkotest')
-        dbCursor = db.cursor()
-
-    except MySQLdb.OperationalError:
-        print 'Create db lodkotest'
-        db = MySQLdb.connect(host='localhost', user='root', passwd='123')
-        dbCursor = db.cursor()
-        dbCursor.execute(
-            'CREATE DATABASE lodkotest DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci')
-
-    dbCursor.execute('COMMIT')
+    db = MySQLdb.connect(
+        host=DB['host'],
+        user=DB['user'],
+        passwd=DB['passwd'],
+        db=DB['db'])
+    dbCursor = db.cursor()
 
     # or utf8 or any other charset you want to handle
     dbCursor.execute("SET NAMES utf8 COLLATE utf8_unicode_ci ;")
     dbCursor.execute("SET CHARACTER SET utf8;")  # same as above
-
-    try:
-        dbCursor.execute('SELECT 1 FROM kinopoiskfilm')
-    except MySQLdb.ProgrammingError:
-        print 'CREATE TABLE kinopoiskfilm'
-        dbCursor.execute('''CREATE TABLE kinopoiskfilm (
-            idkinopoiskfilm INT PRIMARY KEY AUTO_INCREMENT,
-            name VARCHAR(20),
-            slogan VARCHAR(100),
-            descr VARCHAR(1000),
-            year VARCHAR(15),
-            studio VARCHAR(1000)
-            )DEFAULT CHARSET=utf8 DEFAULT COLLATE utf8_unicode_ci
-            ''')
-
-    try:
-        dbCursor.execute('SELECT 1 FROM filmimage')
-    except MySQLdb.ProgrammingError:
-        print 'CREATE TABLE filmimage'
-        dbCursor.execute('CREATE TABLE filmimage (idfilmimage INT PRIMARY KEY AUTO_INCREMENT, imagefilm LONGBLOB, idkinopoiskfilm INT,reviewdescr LONGTEXT)DEFAULT CHARSET=utf8 DEFAULT COLLATE utf8_unicode_ci')
-
-    # try:
-    #     dbCursor.execute('SELECT 1 FROM review')
-    # except MySQLdb.ProgrammingError:
-    #     print  'CREATE TABLE review'
-    #     dbCursor.execute('CREATE TABLE review (idreview INT PRIMARY KEY AUTO_INCREMENT, idkinopoiskfilm INT,reviewdescr LONGTEXT)DEFAULT CHARSET=utf8 DEFAULT COLLATE utf8_unicode_ci')
-    try:
-        dbCursor.execute('SELECT 1 FROM user')
-    except MySQLdb.ProgrammingError:
-        print 'CREATE TABLE user'
-        dbCursor.execute('''CREATE TABLE user (
-            iduser INT PRIMARY KEY AUTO_INCREMENT,
-            username VARCHAR(100),
-            password VARCHAR(100)
-            )DEFAULT CHARSET=utf8 DEFAULT COLLATE utf8_unicode_ci
-            ''')
-
-    dbCursor.execute('COMMIT')
     return db
 
 
@@ -85,45 +36,50 @@ def insert_data(data, studio):
         idkinopoiskfilm = dbCursor.fetchone()[0]
     except TypeError:
         dbCursor.execute(
-            'INSERT INTO kinopoiskfilm (name,slogan,descr,year,studio)VALUE("%s","%s","%s","%s","%s")' %
+            'INSERT INTO kinopoiskfilm (iduser,name,slogan,descr,year,studio)VALUE("%s","%s","%s","%s","%s")' %
             (filmNameRus, film_slogan, film_descr, str(film_year), studio))
         dbCursor.execute('COMMIT')
 
         dbCursor.execute(
-            'SELECT max(idkinopoiskfilm) FROM kinopoiskfilm WHERE name="%s"' %
-            (filmNameRus))
+            'SELECT LAST_INSERT_ID() FROM kinopoiskfilm')
         idkinopoiskfilm = dbCursor.fetchone()[0]
 
         dbCursor.execute(
-            'INSERT INTO filmimage (imagefilm,idkinopoiskfilm,reviewdescr)VALUE("%s",%s,"%s")' %
+            '''INSERT INTO filmimage (imagefilm,idkinopoiskfilm,reviewdescr)
+            VALUE("%s",%s,"%s")''' %
             (repr(img_requests), idkinopoiskfilm, film_res))
         dbCursor.execute('COMMIT')
 
     return idkinopoiskfilm
 
 
-def select_data(idkinopoiskfilm):
+def select_data(idkinopoiskfilm=None,userName):
     db = db_connect()
     dbCursor = db.cursor()
+    response=[]
     print idkinopoiskfilm[1:-1]
     select = '''select k.name, k.slogan, k.descr,k.year,k.studio, f.reviewdescr, f.imagefilm
 						from lodkotest.kinopoiskfilm k
+                        join lodkotest.user u on u.iduser=k.iduser
                         join lodkotest.filmimage f on f.idkinopoiskfilm=k.idkinopoiskfilm
-                        where k.idkinopoiskfilm=%s''' % idkinopoiskfilm[1:-1]
+                        where (k.idkinopoiskfilm=%s and u.username=%s)
+                        or u.username=%s''' % (idkinopoiskfilm[1:-1],userName,userName)
     print select
     dbCursor.execute(select)
-    dataFilm = dbCursor.fetchone()
-    response = {
-        'filmName': dataFilm[0].decode('utf-8'),
-        'filmSlogan': dataFilm[1].decode('utf-8'),
-        'filmDescr': dataFilm[2].decode('utf-8'),
-        'filmYear': dataFilm[3].decode('utf-8'),
-        'filmStudio': dataFilm[4].decode('utf-8').split(','),  # .split(',')
-        'filmReviedescr': dataFilm[5].decode('utf-8'),
-        'filmImage': base64.b64decode(dataFilm[6])
-    }
+    dataFilmList = dbCursor.fetchall()
+    for dataFilm in dataFilmList:
+        response.append({
+                'filmName': dataFilm[0].decode('utf-8'),
+                'filmSlogan': dataFilm[1].decode('utf-8'),
+                'filmDescr': dataFilm[2].decode('utf-8'),
+                'filmYear': dataFilm[3].decode('utf-8'),
+                'filmStudio': dataFilm[4].decode('utf-8').split(','),  # .split(',')
+                'filmReviedescr': dataFilm[5].decode('utf-8'),
+                'filmImage': base64.b64decode(dataFilm[6])
+            })
     # print response
     # print response['filmStudio']
+    db.close()
     return response
 
 
@@ -143,6 +99,7 @@ def select_studio_data(studio):
              film[1].decode('utf-8'),
                 film[2]))
     # print  response
+    db.close()
     return response
 
 def select_user(login,passwd):
@@ -157,5 +114,4 @@ def select_user(login,passwd):
     if mark:
         return True
     else: 
-        return False
-    
+        return False    
